@@ -7,9 +7,8 @@ Cleaning Data in SQL Queries
 Select *
 From DataCleaningProject..NashvilleHousing
 
-
-
---------------------------------------------------------------------------
+	
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- STANDARDIZE DATE FORMAT
 /*Select SaleDate, CAST(SaleDate AS DATE)
@@ -34,22 +33,20 @@ Select SaleDateConverted
 From DataCleaningProject..NashvilleHousing
 
 
---------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- POPULATE PROPERTY ADDRESS DATA (There are NULL values)
 -- Owner address could be changed but Property address 99% will stay the same. Thus column property address could be populated if we had a reference point
 
-
 -- If a ParcelID has a property address, then for the same ParcelID where the property address is null, we will populate it with the corresponding property address.
--- Join the same exact table to itself, where the ParcelID is the same but it's not the same row
 
+-- Join the same exact table to itself, where the ParcelID is the same but it's not the same row
 Select t1.ParcelID, t1.PropertyAddress, t2.ParcelID, t2.PropertyAddress, ISNULL(t1.PropertyAddress, t2.PropertyAddress)
 From DataCleaningProject..NashvilleHousing t1
 Join DataCleaningProject..NashvilleHousing t2
 	ON t1.ParcelID=t2.ParcelID
 	AND t1.[UniqueID ]<>t2.[UniqueID ]
 Where t1.PropertyAddress is NULL
-
 
 Update t1
 SET PropertyAddress = ISNULL(t1.PropertyAddress, t2.PropertyAddress)
@@ -60,13 +57,12 @@ Join DataCleaningProject..NashvilleHousing t2
 Where t1.PropertyAddress is NULL
 
 
---------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 -- SPLIT ADDRESS COLUMNS INTO INDIVIDUAL COLUMNS (Address, City, State)
 
 -- Split Property Address using Substring and Charindex
-
 Select Substring(PropertyAddress, 1, CHARINDEX (',', PropertyAddress)-1) As Address,
 	   Substring(PropertyAddress, CHARINDEX (',', PropertyAddress)+1, len(PropertyAddress)) As City
 From DataCleaningProject..NashvilleHousing
@@ -76,7 +72,6 @@ ALTER TABLE NashvilleHousing
 ADD PropertySplitAddress Nvarchar(255);
 Update NashvilleHousing
 SET PropertySplitAddress = Substring(PropertyAddress, 1, CHARINDEX (',', PropertyAddress)-1)
-
 
 ALTER TABLE NashvilleHousing
 ADD PropertySplitCity Nvarchar(255);
@@ -93,19 +88,16 @@ Select
 	PARSENAME(Replace(OwnerAddress, ',', '.'),1)
 From NashvilleHousing
 
-
 -- Add 3 new separate columns for Owner Address
 ALTER TABLE NashvilleHousing
 ADD OwnerSplitAddress Nvarchar(255);
 Update NashvilleHousing
 SET OwnerSplitAddress = PARSENAME(Replace(OwnerAddress, ',', '.'),3)
 
-
 ALTER TABLE NashvilleHousing
 ADD OwnerSplitCity Nvarchar(255);
 Update NashvilleHousing
 SET OwnerSplitCity = PARSENAME(Replace(OwnerAddress, ',', '.'),2)
-
 
 ALTER TABLE NashvilleHousing
 ADD OwnerSplitState Nvarchar(255);
@@ -113,10 +105,7 @@ Update NashvilleHousing
 SET OwnerSplitState = PARSENAME(Replace(OwnerAddress, ',', '.'),1)
 
 
-
-
---------------------------------------------------------------------------
-
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- CHANGE Y AND N TO YES AND NO IN "Sold as Vacant" FIELD
 Select Distinct(SoldAsVacant), Count(SoldAsVacant)
 From DataCleaningProject..NashvilleHousing
@@ -145,7 +134,7 @@ SET SoldAsVacant = CASE
 				   END;
 
 
---------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- REMOVE DUPLICATES
 -- Note: It's not a standard practice to delete data in database
@@ -155,26 +144,18 @@ SET SoldAsVacant = CASE
 WITH RowNumCTE AS(
 Select *,
 	ROW_NUMBER()OVER (
-	PARTITION BY ParcelID,
-				 PropertyAddress, 
-				 SalePrice, 
-				 SaleDateConverted, 
-				 LegalReference
-				 ORDER BY 
-					UniqueID
-					) row_num
+	PARTITION BY ParcelID, PropertyAddress, SalePrice, SaleDateConverted, LegalReference
+	ORDER BY UniqueID
+	) row_num
 From NashvilleHousing
---Order by ParcelID
 )
--- Select *
 DELETE
 From RowNumCTE
 Where row_num>1
 -- There's turn out to be 104 duplicates
 
-
-
---------------------------------------------------------------------------
+	
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- DELETE UNUSED COLUMNS (PropertyAddress, OwnerAddress, TaxDistrict)
 -- Note: Don't do this to the raw data that you imported - legal advice
