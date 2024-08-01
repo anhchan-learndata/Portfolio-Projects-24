@@ -1,3 +1,11 @@
+/*
+
+This is part 1 of my SQL project - Analyze global suicide rate data with a focus on South Korean youth. 
+This part focuses on data cleaning and creating a temp table, which would be convenient for later analysis.
+
+*/
+
+
 Select *
 From SuicideRateProject..NewGlobalSuicideRate
 
