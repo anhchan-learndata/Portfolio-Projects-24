@@ -1,181 +1,191 @@
+/* 1. Insights from dataset CovidDeathsTo24 */
 
+/* 1.1 Daily and Cumulative Case Counts */
+SELECT 
+    date, 
+    SUM(CAST(total_cases AS BIGINT)) AS total_cases, 
+    SUM(CAST(new_cases AS BIGINT)) AS new_cases
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    location = 'World'
+GROUP BY 
+    date
+ORDER BY 
+    date DESC;
 
+/* 1.2 Daily New Cases and Death Trends for a Specific Country */
+SELECT 
+    date, 
+    new_cases, 
+    new_deaths
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL 
+    AND location = 'Vietnam';
 
---1. Insights from dataset CovidDeathsto24
+/* 1.3 Total Cases vs Population */
+/* Shows what percentage of population infected with COVID */
+SELECT 
+    location, 
+    date, 
+    population, 
+    total_cases, 
+    (total_cases/population) * 100 AS PercentPopulationInfected
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL
+ORDER BY 
+    PercentPopulationInfected DESC;
 
+/* 1.4 Countries with the Highest Total Cases */
+SELECT 
+    TOP 10 location, 
+    MAX(CAST(total_cases AS INT)) AS TotalCases
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL
+GROUP BY 
+    location
+ORDER BY 
+    TotalCases DESC;
 
--- Daily and Cummulative Case Counts
-Select date, sum(cast(total_cases as bigint)) total_cases, sum(cast(new_cases as bigint)) new_cases
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where location = 'World'
-Group by date
-Order by date DESC
+/* 1.5 Total Cases vs Total Deaths */
+/* Shows likelihood of dying if you contract Covid in your country */
+SELECT 
+    location, 
+    date, 
+    total_cases, 
+    total_deaths, 
+    (CAST(total_deaths AS BIGINT) / CAST(total_cases AS BIGINT)) * 100 AS DeathPercentage
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL
+ORDER BY 
+    location, date;
 
+/* 1.6 Countries with the Highest Death Count */
+SELECT 
+    TOP 10 location, 
+    MAX(CAST(total_deaths AS INT)) AS TotalDeathCount, 
+    MAX(CAST(total_deaths_per_million AS FLOAT)) AS TotalDeathsPerMil
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL
+GROUP BY 
+    location
+ORDER BY 
+    TotalDeathCount DESC;
 
--- Daily New Cases and Death Trends for a Specific Country
-Select date, new_cases, new_deaths
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is not NULL 
-and location = 'Vietnam'
+/* 1.7 Continents with the Highest Death Count */
+SELECT 
+    location, 
+    MAX(CAST(total_deaths AS INT)) AS TotalDeathCount
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NULL
+GROUP BY 
+    location
+ORDER BY 
+    TotalDeathCount DESC;
 
+/* 1.8 Countries with the Most ICU Patients Per Million */
+SELECT 
+    TOP 10 location, 
+    MAX(CAST(icu_patients_per_million AS FLOAT)) AS max_icu_patients_per_million
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    continent IS NOT NULL 
+GROUP BY 
+    location
+ORDER BY 
+    max_icu_patients_per_million DESC;
 
+/* 1.9 Daily ICU patients for the Top 5 Countries */
+SELECT 
+    location, 
+    date, 
+    icu_patients
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24
+WHERE 
+    location IN (
+        SELECT 
+            TOP 5 location 
+        FROM 
+            NewCovidPortfolioProject..CovidDeathsTo24
+        GROUP BY 
+            location
+        ORDER BY 
+            MAX(icu_patients) DESC
+    )
+    AND continent IS NOT NULL
+ORDER BY 
+    location, date;
 
--- Total Cases vs Population
--- Shows what percentage of population infected with COVID
-Select location, date, population, total_cases, (total_cases/population)*100 PercentPopulationInfected
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is not NULL
-Order by 5 DESC
+/* 2. JOIN CovidVaccinationsTo24 */
 
+/* 2.1 Global Numbers */
+/* Calculate total cases, deaths, and vaccinations administered globally */
+SELECT 
+    SUM(CAST(dea.new_cases AS BIGINT)) AS total_cases, 
+    SUM(CAST(dea.new_deaths AS BIGINT)) AS total_deaths, 
+    SUM(CAST(vac.new_vaccinations AS BIGINT)) AS total_vaccinations_administered
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24 dea
+JOIN 
+    NewCovidPortfolioProject..CovidVaccinationsTo24 vac
+ON 
+    dea.location = vac.location
+    AND dea.date = vac.date
+WHERE 
+    dea.location = 'World';
 
-
--- Countries with the Highest Total Cases
-Select TOP 10 location, max(cast(total_cases as int)) TotalCases
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is not NULL
-Group by location
-Order by TotalCases DESC
-
-
--- Total Cases vs Total Deaths
--- Shows likelihood of dying if you contract Covid in your country
-Select location, date, total_cases, total_deaths, (cast(total_deaths as bigint))/(cast(total_cases as bigint))*100 DeathPercentage
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where --location = 'United States' 
-continent is not NULL
-order by 1,2
-
-
-
--- Countries with the Highest Death Count
-Select TOP 10 location, max(cast(total_deaths as int)) TotalDeathCount, max(cast(total_deaths_per_million as float)) TotalDeathsPerMil
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is not NULL
-Group by location
-Order by TotalDeathCount DESC
-
-
-
--- Continents with the Highest Death Count
-Select location, max(cast(total_deaths as int)) TotalDeathCount
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is NULL
-Group by location
-Order by TotalDeathCount DESC
-
-
--- Countries with the Most ICU Patients Per Million
-Select Top 10 location, max(cast(icu_patients_per_million as float)) max_icu_patients_per_million
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where continent is not NULL 
-Group by location
-Order by 2 DESC
-
-
--- Daily ICU patients for the Top 5 Countries
-Select location, date, icu_patients
-From NewCovidPortfolioProject..CovidDeathsTo24
-Where location in (Select Top 5 location 
-				   From NewCovidPortfolioProject..CovidDeathsTo24
-				   Group by location
-				   Order by max(icu_patients) DESC)
-				   and continent is not NULL
-Order by location, date
-
-
-
---2. JOIN CovidVaccinations24
-
--- GLOBAL NUMBERS
-Select sum(cast (dea.new_cases as bigint)) total_cases, sum(cast (dea.new_deaths as bigint)) total_deaths, sum(cast(vac.new_vaccinations as bigint)) total_vaccinations_administered
-From NewCovidPortfolioProject..CovidDeathsTo24 dea
-Join NewCovidPortfolioProject..CovidVaccinationsTo24 vac
-On dea.location=vac.location
-and dea.date=vac.date
-Where dea.location = 'World'
-
-
-
--- Total Population vs Vaccination
--- Shows Percentage of Population that has received at least one dose of Covid-19 vaccine
-Select 
-	dea.location, max(dea.population) latest_population, max(cast(vac.people_vaccinated as float)) people_vaccinated, 
-	least(round(max(cast(vac.people_vaccinated as float))/max(dea.population)*100,4),100) percentage_vaccinated
-From NewCovidPortfolioProject..CovidDeathsTo24 dea
-Join NewCovidPortfolioProject..CovidVaccinationsTo24 vac
-On dea.location=vac.location and dea.date=vac.date
-Where dea.continent is not NULL
-Group by dea.location, dea.population
+/* 2.2 Total Population vs Vaccination */
+/* Shows Percentage of Population that has received at least one dose of Covid-19 vaccine */
+SELECT 
+    dea.location, 
+    MAX(dea.population) AS latest_population, 
+    MAX(CAST(vac.people_vaccinated AS FLOAT)) AS people_vaccinated, 
+    LEAST(ROUND(MAX(CAST(vac.people_vaccinated AS FLOAT)) / MAX(dea.population) * 100, 4), 100) AS percentage_vaccinated
+FROM 
+    NewCovidPortfolioProject..CovidDeathsTo24 dea
+JOIN 
+    NewCovidPortfolioProject..CovidVaccinationsTo24 vac
+ON 
+    dea.location = vac.location 
+    AND dea.date = vac.date
+WHERE 
+    dea.continent IS NOT NULL
+GROUP BY 
+    dea.location, dea.population
 HAVING 
     MAX(vac.people_vaccinated) IS NOT NULL 
     AND MAX(dea.population) IS NOT NULL
-Order by 4 DESC
+ORDER BY 
+    percentage_vaccinated DESC;
 
-
-
--- Shows percentage of population with: at least 1 dose, a complete primary series, and at least 1 booster dose of Covid-19 vaccine
-Select vac.location, least(round(max(cast(vac.people_vaccinated as float))/max(dea.population)*100,4),100) OneDose,
-	   least(round(max(cast(vac.people_fully_vaccinated as float))/max(dea.population)*100,4),100) CompleteSeries, 
-	   least(round(max(cast(vac.total_boosters as float))/max(dea.population)*100,4),100) Booster
-From NewCovidPortfolioProject..CovidVaccinationsTo24 vac
-Join NewCovidPortfolioProject..CovidDeathsTo24 dea
-On vac.location=dea.location
-Where vac.location = 'World'
-Group by vac.location
-
-
-
-
-
-		
-	   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/* 2.3 Vaccination Status: One Dose, Complete Series, Booster Dose */
+/* Shows percentage of population with: at least 1 dose, a complete primary series, and at least 1 booster dose of Covid-19 vaccine */
+SELECT 
+    vac.location, 
+    LEAST(ROUND(MAX(CAST(vac.people_vaccinated AS FLOAT)) / MAX(dea.population) * 100, 4), 100) AS OneDose,
+    LEAST(ROUND(MAX(CAST(vac.people_fully_vaccinated AS FLOAT)) / MAX(dea.population) * 100, 4), 100) AS CompleteSeries, 
+    LEAST(ROUND(MAX(CAST(vac.total_boosters AS FLOAT)) / MAX(dea.population) * 100, 4), 100) AS Booster
+FROM 
+    NewCovidPortfolioProject..CovidVaccinationsTo24 vac
+JOIN 
+    NewCovidPortfolioProject..CovidDeathsTo24 dea
+ON 
+    vac.location = dea.location
+WHERE 
+    vac.location = 'World'
+GROUP BY 
+    vac.location;
