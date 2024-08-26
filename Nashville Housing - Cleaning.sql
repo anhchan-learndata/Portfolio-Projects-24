@@ -166,21 +166,3 @@ DROP COLUMN PropertyAddress, OwnerAddress, TaxDistrict
 
 Select *
 From NashvilleHousing
-
-
-
-
-
-
-
-
---------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
